@@ -6,8 +6,8 @@ This repository contains the capstone project for the ICL Professional Certifica
 
 - **Pipeline notebook:** The pipeline itself, comprising per-function GP surrogates (Matérn kernel, ARD lengthscales), an LOO-CV trust gate, a four-method dimension-importance consensus panel, and four candidate-generation strategies (global acquisition ensemble, TuRBO and multi-basin TuRBO, local-GP "needle" refinement, and space-filling exploration), together with the associated diagnostic plots.
 - **Query data** (`initial_data_9/function_<n>/`): Per-function input and output arrays (`initial_inputs.npy`, `initial_outputs.npy`) accumulated over the first nine rounds, used to generate round 10's suggestions.
-- [`datasheet.md`](https://github.com/datasheet.md) : Documents the query and evaluation dataset, including its contents, how it was collected, its intended uses, and its known limitations.
-- [`model_card.md`](https://github.com/chat/model_card.md) : Documents the pipeline itself, including surrogate design, routing logic, current strategy by component, performance by function, and known assumptions and limitations.
+- [`datasheet.md`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/datasheet.md) : Documents the query and evaluation dataset, including its contents, how it was collected, its intended uses, and its known limitations.
+- [`model_card.md`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/model_card.md) : Documents the pipeline itself, including surrogate design, routing logic, current strategy by component, performance by function, and known assumptions and limitations.
 
 ## Inputs and outputs
 
