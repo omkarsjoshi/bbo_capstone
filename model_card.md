@@ -80,10 +80,6 @@ A function that persistently fails to clear the R² ≥ 0.30 threshold, such as 
 
 The candidate-generation strategies used, differential evolution for the global branch and random candidate sampling for TuRBO, are heuristic searches over a finite candidate set rather than exact global optimisers. Suggested query points should therefore be understood as best-effort choices given the fitted surrogate, rather than provably optimal points.
 
-## Distribution
-
-The pipeline code, this model card, and the accompanying datasheet are maintained together in a public GitHub repository, allowing the model and its documentation to be reviewed side by side. There is no separate release channel, API, or packaged model artefact, since this is a coursework submission rather than a deployed service. Repository layout is described in the project README.
-
 ## Ethical considerations
 
 All data used by the pipeline is synthetic coursework data; no personal data, protected attributes, or real-world deployment risk arise from its use as documented here. Caveats such as the gap between fast-development-mode and full-report-mode LOO-CV figures, the missing SHAP scores, and the likely stochasticity of F2 are documented explicitly so that a reader — a facilitator, a peer, or the author revisiting the repository later — can determine when a given round's suggestion should be trusted. This level of documentation is also intended to support adaptation of the pipeline to other black-box optimisation problems: a user reusing the pipeline is expected to check the LOO-CV trust gate and the multimodality or noise flags for a given function before relying on the global-exploitation branch, rather than assuming uniform reliability across all cases.
