@@ -74,8 +74,6 @@ The R² figures reported above were obtained with `REPORT_MODE` enabled, meaning
 
 The pipeline assumes that a stationary Matérn kernel can adequately represent each function's response surface. This assumption does not appear to hold for F1, whose output spans approximately 245 orders of magnitude; a single lengthscale per dimension cannot represent this range, which is reflected in F1's near-meaningless LOO-CV R².
 
-The multi-basin TuRBO logic and the dimension-freezing guard depend on the fixed random seed and current week index for reproducibility; a different seed or week number selects a different basin or candidate and is not directly comparable across runs.
-
 For F2 and F4 specifically, the magnitude of improvement being sought may be smaller than the GP's own noise floor. For F2, this is consistent with genuine stochasticity in the function's output, identified during the Week 9 audit. For F4, the posterior is relatively flat near the current best region, meaning that Thompson sampling draws largely uniformly within it rather than identifying genuine structure. Neither the trust gate nor TuRBO currently distinguishes genuine improvement from noise interpreted as signal, which is an acknowledged limitation of the current design.
 
 A function that persistently fails to clear the R² ≥ 0.30 threshold, such as F1 or F7, continues to be routed to local search indefinitely under the current rule, even where the underlying cause may be a kernel or warping mismatch rather than local structure. The router does not currently attempt an alternative kernel or warping strategy automatically in this situation.
