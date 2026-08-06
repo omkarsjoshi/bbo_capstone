@@ -1,4 +1,4 @@
-# BBO Capstone — Bayesian Optimisation Pipeline
+# BBO Capstone: Bayesian Optimisation Pipeline
 
 This repository contains the capstone project for the ICL Professional Certificate in Machine Learning and Artificial Intelligence (PCMLAI) programme: a configuration-driven Bayesian optimisation pipeline that queries eight black-box benchmark functions (F1-F8, ranging from 2 to 8 dimensions) once per week over a ten-round schedule, with the objective of finding each function's maximiser.
 
