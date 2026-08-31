@@ -60,6 +60,10 @@ with the constraint that $f_i$ can only be evaluated a limited number of times a
 | **Extreme response variation** | Some functions (F1, F5) exhibit highly spiky behaviour (near-flat with isolated peaks), while others are smoother |
 | **No ground truth**            | Cannot verify whether a returned maximum is global or local; model uncertainty estimates are the only guide       |
 
+### Non-technical summary
+This project set out to find the best possible settings for eight unknown mathematical functions, using only a small number of test queries per function, similar to tuning an unfamiliar machine by trial and error under a tight budget. A predictive model learned from each result and decided how much to trust its own predictions before choosing whether to search broadly, refine locally, or hedge across multiple promising regions. This trust was checked periodically for every query round. Every function showed improvement compared to the initial dataset, and a few improved dramatically, including one that jumped 660-fold from a single late discovery. The key lesson was that models can appear correct while quietly being incorrect, and only periodic audits can diagnose this.
+
+
 ### Details of the strategy in the latest round
 
 A full week-by-week account of how the pipeline reached its current form, including approaches that were tried and later discarded (an SVM classifier, neural-network sensitivity analysis, PyTorch-based gradient ascent, and an XGBoost feature-importance model), is provided in the model_card. The summary below describes the current design of each component and the rationale behind it, rather than the full development history.
