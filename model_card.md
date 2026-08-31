@@ -38,7 +38,7 @@ Each change described below was introduced in response to a specific issue ident
 
 **Week 7.** A `WhiteKernel` noise term (lengthscale bounds 0.05–10,000) was added to prevent the GP from fitting noise with unrealistically short lengthscales. The earlier manual classification of functions ("blind", "stalled", "TuRBO") was replaced with a systematic rule based on the LOO-CV trust gate: functions with R² ≥ 0.30 were routed to the global GP ensemble, and all others to TuRBO. Neural-network sensitivity was removed from the dimension-importance panel after being found to correlate closely with the GP and random-forest methods, while being the least reliable of the four given the limited number of data points available. A log-warping trial on F5 was reverted after it was found to reduce LOO-CV R².
 
-**Week 8.** As a reflective exercise, the acquisition and kernel choices used in the pipeline were compared to prompting strategies used with large language models (structured versus zero-shot prompting, temperature and top-p sampling, and context-window truncation). The practical outcome of this exercise was the addition of `TuRBOTracer`, a diagnostic that tracks the trust-region radius across iterations, allowing a collapsing trust region — indicating the optimiser has become stuck — to be identified explicitly rather than inferred after the fact.
+**Week 8.** As a reflective exercise, the acquisition and kernel choices used in the pipeline were compared to prompting strategies used with large language models (structured versus zero-shot prompting, temperature and top-p sampling, and context-window truncation). The practical outcome of this exercise was the addition of `TuRBOTracer`, a diagnostic that tracks the trust-region radius across iterations, allowing a collapsing trust region, indicating the optimiser has become stuck, to be identified explicitly rather than inferred after the fact.
 
 **Week 9.** Most of the pipeline's current configuration originates from the audit conducted this week, ahead of the final round.
 
@@ -53,39 +53,33 @@ Each change described below was introduced in response to a specific issue ident
 F7's choice of target warp was rechecked against newly accumulated data and found to have quietly become the weakest of the three available options, a ranking that had not held at the time it was originally selected, so it was changed to “None”. F1 subsequently achieved a genuine 660-fold improvement through the multi-basin hedging strategy, while F6's decision to remove input warping, arrived at through the same evaluative process, resulted in a value of -0.83 against an incumbent of −0.17, a comparatively unfavourable outcome.
 Among all the changes, using DE to find the global maximum for acquisition functions helped find the incumbent within two rounds, while the round-robin of promising basings for the TuRBO multibasin strategy resulted in a breakthrough for F2 in week 10. That said, the highest-impact single change was the LOO-CV trust gate, not because any one number moved most because of it, but because every other routing decision in the second half of the project depended on it.
 
-## Performance
-
-The primary evaluation metric is the raw-scale LOO-CV R² of each function's GP surrogate, used both as a reported diagnostic and as the live signal driving strategy routing. At round 10, the surrogate R² values by function are tabulated below:
-
 ## Model Performance Summary (Week 13)
 
-| Function | Dim | Strategy Used | LOO-CV R² (leak-free) | LOO-CV R² (leaky, warped) | Best y (round found) |
-|----------|-----|----------------|:----------------------:|:---------------------------:|:---------------------:|
-| F1       | 2D  | TuRBO (multi-basin) | **−0.047** | −0.553 | 0.4962 (round 21) |
-| F2       | 2D  | Global (EI/UCB/PI)  | **+0.559** | +0.524 | 0.6548 (round 17) |
-| F3       | 3D  | Global (EI/UCB/PI)  | **+0.336** | +0.732 | −0.0029 (round 26) |
-| F4       | 4D  | Global — "needle"    | **+0.924** | +0.924 | 0.6565 (round 41) |
-| F5       | 4D  | Global — "corners" (forced/manual override) | **+0.933** | +0.934 | 8662.4050 (round 24) |
-| F6       | 5D  | Global (EI/UCB/PI)  | **+0.752** | +0.752 | −0.1692 (round 27) |
-| F7       | 6D  | Global (EI/UCB/PI)  | **+0.842** | +0.842 | 1.9734 (round 40) |
-| F8       | 8D  | Global (EI/UCB/PI)  | **+0.984** | +0.984 | 9.9720 (round 47) |
+| Function | Dim | Strategy Used | LOO-CV R² (leak-free) | LOO-CV R² (leaky, warped) | Trim1 R² (worst fold removed) | Best y (round found) |
+|----------|-----|----------------|:----------------------:|:---------------------------:|:-------------------------------:|:---------------------:|
+| F1       | 2D  | TuRBO (multi-basin) | **−0.047** | −0.553 | −38.143 | 0.4962 (round 21) |
+| F2       | 2D  | Global (EI/UCB/PI)  | **+0.559** | +0.524 | +0.655  | 0.6548 (round 17) |
+| F3       | 3D  | Global (EI/UCB/PI)  | **+0.336** | +0.732 | +0.740  | −0.0029 (round 26) |
+| F4       | 4D  | Global, "needle"    | **+0.924** | +0.924 | +0.938  | 0.6565 (round 41) |
+| F5       | 4D  | Global, "corners" (forced/manual override) | **+0.933** | +0.934 | +0.973  | 8662.4050 (round 24) |
+| F6       | 5D  | Global (EI/UCB/PI)  | **+0.752** | +0.752 | +0.760  | −0.1692 (round 27) |
+| F7       | 6D  | Global (EI/UCB/PI)  | **+0.842** | +0.842 | +0.881  | 1.9734 (round 40) |
+| F8       | 8D  | Global (EI/UCB/PI)  | **+0.984** | +0.984 | +0.987  | 9.9720 (round 47) |
 
-### Notes on methodology
-- **Two LOO-CV procedures** were compared:
-  - `loo_r2_leaky_warpedscale`: warp (Yeo-Johnson / log) fitted once on the full dataset before folding, R² computed on the warped scale. Near-duplicate query pairs (F2, F5) are treated as independent, so a duplicate's twin can remain in the training fold. This variant is optimistic.
-  - `loo_r2_leakproof_rawscale` *(reported above as headline)*: warp refit within each fold using only that fold's training data, near-duplicate rows withheld as a group, predictions inverted back to the raw target scale. This is the more defensible, leak-free estimate.
-- **Delta (leaky − leak-free)** is largest for F1 (+0.505) and F3 (−0.396), flagging these as the least trustworthy fits — sign and magnitude of the delta both indicate the naive procedure was materially misleading here.
-- **F1** is functionally unusable as a surrogate: a stationary GP kernel cannot represent its needle-shaped landscape (flat everywhere except one spike, discovered at round 10). `loo_rho` (Spearman) of only 0.085 confirms near-zero rank correlation.
-- **F4 and F8** are the most trustworthy fits, both showing near-monotonic R² improvement over the campaign and R² ≈ 0.92–0.98 stable across both LOO variants.
-- **F5** is a special case: its "corners" acquisition is `forced` — the reported suggestion comes from a manual vertex override (`y_max_so_far`) rather than a genuine EI/UCB/PI comparison, since the GP itself won't recommend an interior point beyond the current incumbent.
-- **Frozen dimensions** (excluded from the routing/trust region as untrustworthy): F3 froze x1; F7 froze x1 and x3 — though for F7, RF-family importance metrics and GP-family metrics disagree substantially on x1/x3's true relevance.
-- **Duplicate query groups**: F2 (1 group) and F5 (1 group) had repeat queries submitted to check for stochasticity in the benchmark; both showed reasonable stability (`amp_at_worst_fold`: 1.63 and 1.00 respectively).
-- **Clipping**: no functions hit the `n_clipped` bound (all report `0/n`), so LOO estimates are not being distorted by output clamping.
-- Scale caveat: absolute best-y values are **not comparable across functions** (e.g., F5's 8662.4 vs F3's −0.0029) — these are independent, differently-scaled benchmarks, so no aggregate/summed score should be computed without normalisation first.
+### Methodological notes
 
-A secondary diagnostic compares the GP-based and random-forest-based families of dimension-importance scores; disagreement between the two families is used qualitatively to flag potential dimension interactions rather than as a scored metric. F5's second dimension shows the largest disagreement observed (GP family ≈0.91 versus random-forest family ≈0.09), consistent with F5's optimum occurring in a region where dimensions interact jointly rather than acting independently.
+Two distinct leave-one-out cross-validation (LOO-CV) procedures were employed to evaluate surrogate fidelity, and the resulting estimates should be interpreted as related but non-equivalent quantities rather than as redundant confirmations of one another. The first, `loo_r2_leaky_warpedscale`, fits the target warp (a Yeo-Johnson or logarithmic transform) once over the complete dataset prior to fold partitioning, such that each fold's transformation is partially informed by the very observation subsequently withheld; near-duplicate query pairs (present for F2 and F5, introduced to test for stochasticity in the benchmark) are treated as independent observations under this scheme, permitting one member of a duplicate pair to remain in the training set while its counterpart is held out; and the coefficient of determination is computed entirely in warped space. The second procedure, `loo_r2_leakproof_rawscale`, addresses each of these limitations in turn: the warp is refit within each fold using only that fold's training data, near-duplicate observations are withheld as a single group, and predictions are inverted to the raw target scale prior to computing R². Because these three refinements act cumulatively, the leak-free estimate is adopted here as the primary reported metric, on the grounds that it more faithfully reflects the model's expected performance on genuinely unseen data.
 
-The R² figures reported above were obtained with `REPORT_MODE` enabled, meaning each LOO-CV fold refits the GP's hyperparameters independently. A faster development mode exists in which the kernel is fitted once on the full dataset and reused across folds; this mode is documented as producing mildly optimistic R² estimates, since the shared hyperparameters have effectively already been exposed to the held-out point, and is used only for iterative development rather than for reported figures.
+The divergence between the two estimates is most pronounced for F3, whose leaky R² of 0.732 falls to 0.336 under the leak-free procedure. This is consistent with the function's Yeo-Johnson warp: the leaky metric, computed exclusively in transformed space, is never exposed to the tail-amplification that occurs upon inversion to the raw scale, and consequently understates the true predictive error. The magnitude and direction of this delta across functions therefore serves as a useful diagnostic of warp-related overoptimism in the naive validation scheme, independent of any judgement about the underlying model quality.
+
+A trimmed R² (`loo_r2_trim1`), recomputed with the single worst-performing LOO group excluded, is reported alongside the two headline metrics as a robustness check: where trim1 recovers substantially above the untrimmed estimate while rank correlation (`loo_rho`) remains high, this indicates that the model's apparent unreliability is attributable to a single difficult observation rather than to a systematically poor fit. Two automated diagnostic flags, `single_fold_driven` and `clip_dominated`, are defined precisely along these lines, the former identifying low R² driven by one anomalous point, the latter identifying low R² driven by multiple folds encountering the Yeo-Johnson transform's domain boundary, and neither flag is raised for any function in the current evaluation. This indicates that each function's reported R², however low, reflects a genuine limitation of the surrogate model rather than an artefact of the validation or transformation procedure.
+
+Fit quality varies substantially by function. F1 remains effectively unusable as a surrogate: its stationary Gaussian process kernel cannot represent the function's needle-like landscape, in which the domain is flat except for a single narrow spike discovered at round 10, and the correspondingly low rank correlation (ρ = 0.085) confirms that the model fails to recover even the correct ordering of observations. By contrast, F4 and F8 exhibit the most trustworthy fits in the cohort, with leak-free R² values in the range of 0.92–0.98 that remain stable across both validation procedures and show near-monotonic improvement over the course of the campaign. F5 warrants a separate methodological caveat: its reported acquisition strategy is `forced` rather than the result of a genuine comparison among EI, UCB, and PI, since the current best value (`y_max_so_far`) is imposed via manual override at the domain vertices, the underlying GP being unwilling to recommend an interior point that would improve on the current incumbent.
+
+Two dimensions were frozen, excluded from acquisition-function optimisation on the grounds of judged irrelevance, over the course of the campaign: x1 for F3, and both x1 and x3 for F7. For F7, however, the GP-family and RF-family importance metrics disagree substantially on the relevance of the frozen dimensions, with RF-family scores approaching 1.0 against considerably lower GP-family scores, suggesting an interaction effect that neither modelling approach captures well in isolation and that the freezing decision should be treated with corresponding caution.
+
+Finally, no function's LOO-CV estimate is currently affected by output clipping at the Yeo-Johnson transform boundary (all functions report 0 clipped folds), and the best-observed target values reported above are not commensurable across functions, F5's best value of 8662.4050, for instance, exceeds every other function's by several orders of magnitude, since each benchmark operates on an independent, unnormalised scale, and any summed or averaged cross-function score would therefore be meaningless without prior normalisation.
+
 
 ## Assumptions and limitations
 
