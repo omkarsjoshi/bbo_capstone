@@ -74,12 +74,7 @@ A full week-by-week account of how the pipeline reached its current form, includ
 
 **Acquisition, global branch.** An ensemble of Upper Confidence Bound, Expected Improvement, and Probability of Improvement is used, with `xi` scaled to each function's output range and `beta` scaled following Srinivas et al. (2009), rather than using fixed constants, since a single fixed value is not appropriate given the wide variation in output scale across the eight functions. Candidate points are optimised using differential evolution with an L-BFGS-B local polish, which replaced an earlier random-sampling approach once higher-dimensional functions required a more targeted search.
 
-![Alternative Text](/resources/de_climbing.gif)
-
-
-
-![Alternative Text](/resources/de_climbing.gif)
-
+![Climbing animation](/resources/de_climbing.gif)
 
 **Trust gate.** A function is routed to the global acquisition ensemble described above if its leak-free LOO-CV R² is at least 0.30; otherwise it is routed to TuRBO. F1's scatter plot is the visual counterpart of its R² value of -0.047: all but one point lie close to y = 0, and the model predicts a near-zero value for the needle point as well, since it has no basis for inferring a spike from data that otherwise appears uniformly flat. F5 shows the opposite pattern: the two points near the vertex value of 8000 or higher are predicted almost exactly, which raises the overall R² despite comparatively noisier predictions in the 0 to 2000 range.
 
