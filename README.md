@@ -74,13 +74,41 @@ A full week-by-week account of how the pipeline reached its current form, includ
 
 **Acquisition, global branch.** An ensemble of Upper Confidence Bound, Expected Improvement, and Probability of Improvement is used, with `xi` scaled to each function's output range and `beta` scaled following Srinivas et al. (2009), rather than using fixed constants, since a single fixed value is not appropriate given the wide variation in output scale across the eight functions. Candidate points are optimised using differential evolution with an L-BFGS-B local polish, which replaced an earlier random-sampling approach once higher-dimensional functions required a more targeted search.
 
+![Alternative Text](de_climbing.gif)
+
 **Trust gate.** A function is routed to the global acquisition ensemble described above if its leak-free LOO-CV R² is at least 0.30; otherwise it is routed to TuRBO. Under this rule, F1 (R² = −0.047) remains routed to TuRBO (multi-basin), while F2 through F8 all clear the threshold and are routed to the global ensemble. F3, at 0.336, sits closest to the boundary however after removing the worst performing LOO fold, it increases to 0.74. This rule replaced an earlier manual classification of functions (as "blind", "stalled", or "TuRBO") with a systematic criterion re-evaluated every round.
+
+![Alternative Text](r2.png)
 
 **Local search (TuRBO).** The trust region expands or contracts based on consecutive success and failure streaks, with its size determined by the GP's own lengthscales. A diagnostic tool (`TuRBOTracer`) tracks the trust-region radius across iterations so that a collapsing region can be identified explicitly rather than inferred after the fact. F1 uses a multi-basin variant that alternates the trust region across several well-separated high-value regions rather than anchoring on a single point.
 
 **Dimension importance.** A consensus panel comprising ARD lengthscales, GP posterior-gradient sensitivity, random-forest permutation importance, and SHAP is used to identify dimensions that can be frozen. Under this panel, F3 has x1 frozen and F7 has both x1 and x3 frozen; for F7, GP-family and RF-family scores disagree substantially on these dimensions, so the freezing decision is treated with some caution. This panel previously included neural-network sensitivity as a fifth method; it was removed once its scores were found to correlate closely with the GP and random-forest methods while being the least reliable of the group given the small number of available points per function.
 
+![Alternative Text](consensus_panel.png)
+
 **Reproducibility.** Every GP instance uses a fixed random seed (`random_state=42`), with separate seeded sub-streams per function and per week. This was introduced after identifying that unseeded GP restarts produced inconsistent LOO-CV R² values across repeated runs of identical code, most noticeably for F1 and F2.
+
+
+## Final results
+
+
+![Alternative Text](gp_mean_surface.png)
+
+| Function | Dim | Strategy Used | LOO-CV R² (leak-free) | LOO-CV R² (leaky, warped) | Trim1 R² (worst fold removed) | Best y (round found) |
+|----------|-----|----------------|:----------------------:|:---------------------------:|:-------------------------------:|:---------------------:|
+| F1       | 2D  | TuRBO (multi-basin) | **−0.047** | −0.553 | −38.143 | 0.4962 (round 21) |
+| F2       | 2D  | Global (EI/UCB/PI)  | **+0.559** | +0.524 | +0.655  | 0.6548 (round 17) |
+| F3       | 3D  | Global (EI/UCB/PI)  | **+0.336** | +0.732 | +0.740  | −0.0029 (round 26) |
+| F4       | 4D  | Global, "needle"    | **+0.924** | +0.924 | +0.938  | 0.6565 (round 41) |
+| F5       | 4D  | Global, "corners" (forced/manual override) | **+0.933** | +0.934 | +0.973  | 8662.4050 (round 24) |
+| F6       | 5D  | Global (EI/UCB/PI)  | **+0.752** | +0.752 | +0.760  | −0.1692 (round 27) |
+| F7       | 6D  | Global (EI/UCB/PI)  | **+0.842** | +0.842 | +0.881  | 1.9734 (round 40) |
+| F8       | 8D  | Global (EI/UCB/PI)  | **+0.984** | +0.984 | +0.987  | 9.9720 (round 47) |
+
+
+![Alternative Text](progress.png)
+
+
 
 ## Notes on transparency
 
