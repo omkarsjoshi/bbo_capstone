@@ -74,27 +74,42 @@ A full week-by-week account of how the pipeline reached its current form, includ
 
 **Acquisition, global branch.** An ensemble of Upper Confidence Bound, Expected Improvement, and Probability of Improvement is used, with `xi` scaled to each function's output range and `beta` scaled following Srinivas et al. (2009), rather than using fixed constants, since a single fixed value is not appropriate given the wide variation in output scale across the eight functions. Candidate points are optimised using differential evolution with an L-BFGS-B local polish, which replaced an earlier random-sampling approach once higher-dimensional functions required a more targeted search.
 
-![Alternative Text](de_climbing.gif)
+![Alternative Text](/resources/de_climbing.gif)
 
-**Trust gate.** A function is routed to the global acquisition ensemble described above if its leak-free LOO-CV R² is at least 0.30; otherwise it is routed to TuRBO. Under this rule, F1 (R² = −0.047) remains routed to TuRBO (multi-basin), while F2 through F8 all clear the threshold and are routed to the global ensemble. F3, at 0.336, sits closest to the boundary however after removing the worst performing LOO fold, it increases to 0.74. This rule replaced an earlier manual classification of functions (as "blind", "stalled", or "TuRBO") with a systematic criterion re-evaluated every round.
 
-![Alternative Text](r2.png)
+
+![Alternative Text](/resources/de_climbing.gif)
+
+
+**Trust gate.** A function is routed to the global acquisition ensemble described above if its leak-free LOO-CV R² is at least 0.30; otherwise it is routed to TuRBO. F1's scatter plot is the visual counterpart of its R² value of -0.047: all but one point lie close to y = 0, and the model predicts a near-zero value for the needle point as well, since it has no basis for inferring a spike from data that otherwise appears uniformly flat. F5 shows the opposite pattern: the two points near the vertex value of 8000 or higher are predicted almost exactly, which raises the overall R² despite comparatively noisier predictions in the 0 to 2000 range.
+
+F4 and F8 show the most trustworthy fit among all the functions, and this is reflected in the near-monotonic improvement both saw over the course of the weekly rounds. 
+
+![Alternative Text](/resources/r2.png)
 
 **Local search (TuRBO).** The trust region expands or contracts based on consecutive success and failure streaks, with its size determined by the GP's own lengthscales. A diagnostic tool (`TuRBOTracer`) tracks the trust-region radius across iterations so that a collapsing region can be identified explicitly rather than inferred after the fact. F1 uses a multi-basin variant that alternates the trust region across several well-separated high-value regions rather than anchoring on a single point.
 
-**Dimension importance.** A consensus panel comprising ARD lengthscales, GP posterior-gradient sensitivity, random-forest permutation importance, and SHAP is used to identify dimensions that can be frozen. Under this panel, F3 has x1 frozen and F7 has both x1 and x3 frozen; for F7, GP-family and RF-family scores disagree substantially on these dimensions, so the freezing decision is treated with some caution. This panel previously included neural-network sensitivity as a fifth method; it was removed once its scores were found to correlate closely with the GP and random-forest methods while being the least reliable of the group given the small number of available points per function.
+**Dimension importance.** A consensus panel comprising ARD lengthscales, GP posterior-gradient sensitivity, random-forest permutation importance, and SHAP is used to identify dimensions that can be frozen. Under this panel, F3 has x1 frozen, and F7 has both x1 and x3 frozen. While x3 was frozen because the consensus panel deemed it irrelevant, the incumbent currently has x1 at 0, and based on the GP slice visualisations and the output, it steeply decreases at higher values of x1. Hence, x1 was also frozen at 0. 
 
-![Alternative Text](consensus_panel.png)
+This panel previously included neural-network sensitivity as a fifth method; it was removed once its scores were found to correlate closely with the GP and random-forest methods while being the least reliable of the group given the small number of available points per function.
+
+![Alternative Text](/resources/consensus_panel.png)
 
 **Reproducibility.** Every GP instance uses a fixed random seed (`random_state=42`), with separate seeded sub-streams per function and per week. This was introduced after identifying that unseeded GP restarts produced inconsistent LOO-CV R² values across repeated runs of identical code, most noticeably for F1 and F2.
 
 
 ## Final results
+The 3D slice for the GP is rendered below considering the top two important dimensions, while every other dimension held fixed at the incumbent. The slices clearly show how much of the observed scatter the surrogate is (and isn't) explaining. Also, F1's needle-like spike on the otherwise flat landscape is consistent with its negative LOO R².  against F4's clean converged dome.
 
+F1's surface renders as essentially flat across the entire domain, since a stationary kernel cannot represent a single spike. This is constrated with F4's smooth, well-explained surface that peaks at a very narrow region.
 
-![Alternative Text](gp_mean_surface.png)
+![Alternative Text](/resources/gp_mean_surface.png)
 
-| Function | Dim | Strategy Used | LOO-CV R² (leak-free) | LOO-CV R² (leaky, warped) | Trim1 R² (worst fold removed) | Best y (round found) |
+The tabulation below illustrates different diagnostic metrics. The before and after columns correspond to two distinct LOO-CV procedures, `loo_cv_leaky_warpedscale` and `loo_cv_leakproof_rawscale`. In the former, the warp is fitted once on the full dataset, so each fold's target transform is partly informed by the point it later holds out. And since duplicate queries were made for F2 and F5 to confirm if they were stochastic, these rows are treated as independent, allowing a duplicate's counterpart to remain in training while its pair is withheld. Moreover, R² is computed on the warped scale. In the latter, the warp is refitted within each fold using only that fold's training data, near-duplicate rows are withheld together, and predictions are inverted to the raw scale before R² is computed. As these three differences act cumulatively, the two columns should be read as related but non-equivalent quantities, highlighting the importance of appropriate validation workflow when warping is used.
+
+F3 shows the largest decrease between these metrics, with leakprone R² of 0.732 vs the leakfree R2 of 0.336. This is expected for a Yeo-Johnson-warped function, since `loo_cv_leaky_warpedscale` is computed entirely in warped space and is therefore never exposed to the tail-amplification effect that the raw-scale `loo_cv_leakproof_rawscale` metric captures. 
+
+| Function | Dim | Strategy Used | LOO-CV R² (leakproof) | LOO-CV R² (leaky, warped) | Trim1 R² (worst fold removed) | Best y (round found) |
 |----------|-----|----------------|:----------------------:|:---------------------------:|:-------------------------------:|:---------------------:|
 | F1       | 2D  | TuRBO (multi-basin) | **−0.047** | −0.553 | −38.143 | 0.4962 (round 21) |
 | F2       | 2D  | Global (EI/UCB/PI)  | **+0.559** | +0.524 | +0.655  | 0.6548 (round 17) |
@@ -105,8 +120,8 @@ A full week-by-week account of how the pipeline reached its current form, includ
 | F7       | 6D  | Global (EI/UCB/PI)  | **+0.842** | +0.842 | +0.881  | 1.9734 (round 40) |
 | F8       | 8D  | Global (EI/UCB/PI)  | **+0.984** | +0.984 | +0.987  | 9.9720 (round 47) |
 
-
-![Alternative Text](progress.png)
+The trend below shows how the best value observed for each function evolved over the campaign, excluding the initial sampling phase, so it shows only the sequential decision-making phase. F1 and F5 both show a single large-step improvement rather than gradual progress. F1's spike was discovered around round 10, and F5's vertex was discovered around round 3. F2, F3, F6, F7, and F8 have shown essentially no improvement over several recent rounds, which suggests these campaigns may be approaching their practical ceiling for the current evaluation budget.
+![Alternative Text](/resources/progress.png)
 
 
 
