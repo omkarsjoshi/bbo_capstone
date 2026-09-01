@@ -105,7 +105,7 @@ The tabulation below illustrates different diagnostic metrics. The before and af
 
 F3 shows the largest decrease between these metrics, with leak-prone R² of 0.732 vs the leakfree R2 of 0.336. This is expected for a Yeo-Johnson-warped function, since `loo_cv_leaky_warpedscale` is computed entirely in warped space and is therefore never exposed to the tail-amplification effect that the raw-scale `loo_cv_leakproof_rawscale` metric captures. 
 
-| Function | Dim | Strategy Used | LOO-CV R² (leakproof) | LOO-CV R² (leaky, warped) | Trim1 R² (worst fold removed) | Best y (round found) |
+| Function | Dim | Strategy Used | LOO-CV R² (leakproof) | LOO-CV R² (leaky, warped) | Trim1 R² (worst fold removed) | Best y  |
 |----------|-----|----------------|:----------------------:|:---------------------------:|:-------------------------------:|:---------------------:|
 | F1       | 2D  | TuRBO (multi-basin) | **−0.047** | −0.553 | −38.143 | 0.4962 |
 | F2       | 2D  | Global (EI/UCB/PI)  | **+0.559** | +0.524 | +0.655  | 0.6548  |
