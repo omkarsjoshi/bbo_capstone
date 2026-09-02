@@ -3,12 +3,15 @@
 This repository contains the capstone project for the ICL Professional Certificate in Machine Learning and Artificial Intelligence (PCMLAI) programme: a configuration-driven Bayesian optimisation pipeline that queries eight black-box benchmark functions (F1-F8, ranging from 2 to 8 dimensions) once per week over a thirteen-round schedule, with the objective of finding each function's maximiser.
 
 ## Contents
-- **[Pipeline notebook](https://github.com/omkarsjoshi/bbo_capstone/blob/main/Capstone_W13_Final.ipynb):** Orchestrates the modules below to load the accumulated data, run the LOO-CV trust gate and consensus panel for every function, generate this round's candidate points, and produce the accompanying diagnostic plots and tables.
+- **[Pipeline notebook](https://github.com/omkarsjoshi/bbo_capstone/blob/main/Capstone_W13_Final.ipynb):** Orchestrates the modules below to load the accumulated data, run the LOO-CV trust gate and consensus panel for every function, generate this round's candidate points, and produce the accompanying diagnostic plots and tables, along with detailed analysis.
 - The pipeline itself ([`bbo_data.py`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/bbo_data.py), [`bbo_pipeline.py`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/bbo_pipeline.py), [`bbo_diagnostics.py`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/bbo_diagnostics.py)), comprising per-function GP surrogates (Matérn kernel, ARD lengthscales), an LOO-CV trust gate, a four-method dimension-importance consensus panel, and four candidate-generation strategies (global acquisition ensemble, TuRBO and multi-basin TuRBO, local-GP "needle" refinement, and space-filling exploration), together with the associated diagnostic plots.
 - **Query data** (`initial_data/function_<n>/`): Per-function input and output arrays (`initial_inputs.npy`, `initial_outputs.npy`) from the initial dataset.
 - **Round log** ([`inputs_W12.txt`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/inputs_W12.txt), [`outputs_W12.txt`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/outputs_W12.txt)): Cumulative, per-round record of every input queried and output received from round 1 through round 12 (one row per function per round), appended by `bbo_data.py` onto the initial sample. Together with the query data above, this reconstructs each function's full accumulated dataset, from which round 13's final suggestions are generated.
 - [`datasheet.md`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/datasheet.md): Documents the query and evaluation dataset, including its contents, how it was collected, its intended uses, and its known limitations.
 - [`model_card.md`](https://github.com/omkarsjoshi/bbo_capstone/blob/main/model_card.md): Documents the pipeline itself, including surrogate design, routing logic, current strategy by component, performance by function, and known assumptions and limitations.
+
+## Non-technical summary
+This project set out to find the best possible settings for eight unknown mathematical functions, using only a small number of test queries per function, similar to tuning an unfamiliar machine by trial and error under a tight budget. A predictive model learned from each result and decided how much to trust its own predictions before choosing whether to search broadly, refine locally, or hedge across multiple promising regions. This trust was checked periodically for every query round. Every function showed improvement compared to the initial dataset, and a few improved dramatically, including one that jumped 660-fold from a single late discovery. The key lesson was that models can appear correct while quietly being incorrect, and only periodic audits can diagnose this.
 
 ## Inputs and outputs
 
@@ -61,8 +64,7 @@ with the constraint that $f_i$ can only be evaluated a limited number of times a
 | **Extreme response variation** | Some functions (F1, F5) exhibit highly spiky behaviour (near-flat with isolated peaks), while others are smoother |
 | **No ground truth**            | Cannot verify whether a returned maximum is global or local; model uncertainty estimates are the only guide       |
 
-### Non-technical summary
-This project set out to find the best possible settings for eight unknown mathematical functions, using only a small number of test queries per function, similar to tuning an unfamiliar machine by trial and error under a tight budget. A predictive model learned from each result and decided how much to trust its own predictions before choosing whether to search broadly, refine locally, or hedge across multiple promising regions. This trust was checked periodically for every query round. Every function showed improvement compared to the initial dataset, and a few improved dramatically, including one that jumped 660-fold from a single late discovery. The key lesson was that models can appear correct while quietly being incorrect, and only periodic audits can diagnose this.
+
 
 
 ### Details of the strategy in the latest round
